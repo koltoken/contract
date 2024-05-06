@@ -159,14 +159,6 @@ contract Foundry is IFoundry, Ownable {
     emit SetAppOwner(appId, newOwner, msg.sender);
   }
 
-  function setAppOperator(uint256 appId, address newOperator) external override appExist(appId) {
-    require(msg.sender == _apps[appId].owner, "AOE");
-
-    _apps[appId].operator = newOperator;
-
-    emit SetAppOperator(appId, newOperator, msg.sender);
-  }
-
   function setMortgageFee(uint256 appId, uint256 newMortgageFee) external override onlyOwner appExist(appId) {
     mortgageFee[appId] = newMortgageFee;
 

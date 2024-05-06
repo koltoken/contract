@@ -6,7 +6,7 @@ import { getTokenAmountWei, getTokenAmountWeiFromDecimal } from "./shared/utils"
 import Decimal from "decimal.js";
 
 describe("Market", function () {
-  describe("multiply", function () {
+  describe("multiply.proxy", function () {
     let data = [
       {
         amount: "83333.333",
@@ -63,7 +63,6 @@ describe("Market", function () {
       const allInfo = await loadFixture(deployAllContracts);
       const info = allInfo.ethProxy;
 
-
       let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
       let nftOwnerT2_1 = info.wallets[info.nextWalletIndex + 3];
@@ -79,34 +78,44 @@ describe("Market", function () {
         onftOwner: nftOwnerT1_2.address,
       };
       await info.appOperator
-        .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
+        .createToken(
+          paramsT1.tid,
+          paramsT1.tData,
+          paramsT1.cnftOwner,
+          paramsT1.onftOwner,
+        );
+
       let paramsT2 = {
         tid: "t2",
-        tData: "0x22",
+        tData: "0x11",
         cnftOwner: nftOwnerT2_1.address,
         onftOwner: nftOwnerT2_2.address,
       };
       await info.appOperator
-        .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
-
+        .createToken(
+          paramsT2.tid,
+          paramsT2.tData,
+          paramsT2.cnftOwner,
+          paramsT2.onftOwner,
+        );
 
       // not tid
-      await expect(info.marketKol.multiply("t123", getTokenAmountWei(1))).revertedWith("TE");
+      await expect(info.appOperator.multiply("t123", getTokenAmountWei(1), 0)).revertedWith("TE");
 
       // zero
-      await expect(info.marketKol.multiply(paramsT1.tid, 0)).revertedWith("TAE");
+      await expect(info.appOperator.multiply(paramsT1.tid, 0, 0)).revertedWith("TAE");
 
       // msg.value < need
-      let result = await info.marketKol.multiply.staticCall(paramsT1.tid, getTokenAmountWei(1000), {
+      let result = await info.appOperator.multiply.staticCall(paramsT1.tid, getTokenAmountWei(1000), 0, {
         value: BigInt(10) ** BigInt(18) * BigInt(10000),
       });
       await expect(
-        info.marketKol.multiply(paramsT1.tid, getTokenAmountWei(1000), { value: result.payTokenAmount - BigInt(1) }),
+        info.appOperator.multiply(paramsT1.tid, getTokenAmountWei(1000), 0, { value: result.payTokenAmount - BigInt(1) }),
       ).revertedWith("VE");
 
       //  amount > 1000W
       await expect(
-        info.marketKol.multiply(paramsT1.tid, getTokenAmountWei(10000000), {
+        info.appOperator.multiply(paramsT1.tid, getTokenAmountWei(10000000), 0, {
           value: BigInt(10) ** BigInt(18) * BigInt(10000),
         }),
       ).revertedWithPanic("0x11");
@@ -116,7 +125,6 @@ describe("Market", function () {
       const allInfo = await loadFixture(deployAllContracts);
       const info = allInfo.ethProxy;
 
-
       let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
       let nftOwnerT2_1 = info.wallets[info.nextWalletIndex + 3];
@@ -132,22 +140,32 @@ describe("Market", function () {
         onftOwner: nftOwnerT1_2.address,
       };
       await info.appOperator
-        .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
+        .createToken(
+          paramsT1.tid,
+          paramsT1.tData,
+          paramsT1.cnftOwner,
+          paramsT1.onftOwner,
+        );
+
       let paramsT2 = {
         tid: "t2",
-        tData: "0x22",
+        tData: "0x11",
         cnftOwner: nftOwnerT2_1.address,
         onftOwner: nftOwnerT2_2.address,
       };
       await info.appOperator
-        .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
+        .createToken(
+          paramsT2.tid,
+          paramsT2.tData,
+          paramsT2.cnftOwner,
+          paramsT2.onftOwner,
+        );
 
-
-      await info.marketKol.connect(user1).multiply(paramsT1.tid, getTokenAmountWei(1000), {
+      await info.appOperator.connect(user1).multiply(paramsT1.tid, getTokenAmountWei(1000), 0, {
         value: BigInt(10) ** BigInt(18) * BigInt(10000),
       });
 
-      await info.marketKol.connect(user1).multiply(paramsT1.tid, getTokenAmountWei(1000), {
+      await info.appOperator.connect(user1).multiply(paramsT1.tid, getTokenAmountWei(1000), 0, {
         value: BigInt(10) ** BigInt(18) * BigInt(10000),
       });
 
@@ -156,47 +174,47 @@ describe("Market", function () {
 
       //  not tokenid
       await expect(
-        info.marketKol.multiplyAdd(3, getTokenAmountWei(1000), { value: BigInt(10) ** BigInt(18) * BigInt(10000) }),
+        info.appOperator.multiplyAdd(3, getTokenAmountWei(1000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(10000) }),
       ).revertedWith("ERC721: invalid token ID");
 
       //  deleted tokenid
-      await info.marketKol
+      await info.appOperator
         .connect(user1)
-        .redeem(1, getTokenAmountWei(1000), { value: BigInt(10) ** BigInt(18) * BigInt(10000) });
+        .redeem(1, getTokenAmountWei(1000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(10000) });
 
       await expect(info.mortgageNFTKol.ownerOf(1)).revertedWith("ERC721: invalid token ID");
       expect(await info.mortgageNFTKol.ownerOf(2)).eq(user1.address);
 
       await expect(
-        info.marketKol
+        info.appOperator
           .connect(user2)
-          .multiplyAdd(1, getTokenAmountWei(1000), { value: BigInt(10) ** BigInt(18) * BigInt(10000) }),
+          .multiplyAdd(1, getTokenAmountWei(1000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(10000) }),
       ).revertedWith("ERC721: invalid token ID");
 
       //  other user tokenid
       await expect(
-        info.marketKol
+        info.appOperator
           .connect(user2)
-          .multiplyAdd(2, getTokenAmountWei(1000), { value: BigInt(10) ** BigInt(18) * BigInt(10000) }),
+          .multiplyAdd(2, getTokenAmountWei(1000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(10000) }),
       ).revertedWith("AOE");
 
       // 0
       await expect(
-        info.marketKol.connect(user1).multiplyAdd(2, 0, { value: BigInt(10) ** BigInt(18) * BigInt(10000) }),
+        info.appOperator.connect(user1).multiplyAdd(2, 0, 0, { value: BigInt(10) ** BigInt(18) * BigInt(10000) }),
       ).revertedWith("TAE");
 
       // msg.value < need
-      let needEth = await info.marketKol
+      let needEth = await info.appOperator
         .connect(user1)
-        .multiplyAdd.staticCall(2, getTokenAmountWei(1000), { value: BigInt(10) ** BigInt(18) * BigInt(10000) });
+        .multiplyAdd.staticCall(2, getTokenAmountWei(1000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(10000) });
 
       await expect(
-        info.marketKol.connect(user1).multiplyAdd(2, getTokenAmountWei(1000), { value: needEth - BigInt(1) }),
+        info.appOperator.connect(user1).multiplyAdd(2, getTokenAmountWei(1000), 0, { value: needEth - BigInt(1) }),
       ).revertedWith("VE");
 
       //  amount > 1000W
       await expect(
-        info.marketKol.connect(user1).multiplyAdd(2, getTokenAmountWei(10000000) - getTokenAmountWei(1000), {
+        info.appOperator.connect(user1).multiplyAdd(2, getTokenAmountWei(10000000) - getTokenAmountWei(1000), 0, {
           value: BigInt(10) ** BigInt(18) * BigInt(10000),
         }),
       ).revertedWithPanic("0x11");
@@ -206,7 +224,6 @@ describe("Market", function () {
       const allInfo = await loadFixture(deployAllContracts);
       const info = allInfo.ethProxy;
 
-
       let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
       let nftOwnerT2_1 = info.wallets[info.nextWalletIndex + 3];
@@ -222,16 +239,26 @@ describe("Market", function () {
         onftOwner: nftOwnerT1_2.address,
       };
       await info.appOperator
-        .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
+        .createToken(
+          paramsT1.tid,
+          paramsT1.tData,
+          paramsT1.cnftOwner,
+          paramsT1.onftOwner,
+        );
+
       let paramsT2 = {
         tid: "t2",
-        tData: "0x22",
+        tData: "0x11",
         cnftOwner: nftOwnerT2_1.address,
         onftOwner: nftOwnerT2_2.address,
       };
       await info.appOperator
-        .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
-
+        .createToken(
+          paramsT2.tid,
+          paramsT2.tData,
+          paramsT2.cnftOwner,
+          paramsT2.onftOwner,
+        );
 
       let getGas = async function (tx: any) {
         let result = await tx.wait();
@@ -244,12 +271,12 @@ describe("Market", function () {
 
       let user1_eth_1 = await ethers.provider.getBalance(user1.address);
 
-      let result = await info.marketKol.connect(user1).multiply.staticCall(paramsT1.tid, getTokenAmountWei(1000), {
+      let result = await info.appOperator.connect(user1).multiply.staticCall(paramsT1.tid, getTokenAmountWei(1000), 0, {
         value: BigInt(10) ** BigInt(18) * BigInt(10000),
       });
-      let tx = await info.marketKol
+      let tx = await info.appOperator
         .connect(user1)
-        .multiply(paramsT1.tid, getTokenAmountWei(1000), { value: result.payTokenAmount });
+        .multiply(paramsT1.tid, getTokenAmountWei(1000), 0, { value: result.payTokenAmount });
       let gas = await getGas(tx);
 
       let user1_eth_2 = await ethers.provider.getBalance(user1.address);
@@ -262,7 +289,6 @@ describe("Market", function () {
       const allInfo = await loadFixture(deployAllContracts);
       const info = allInfo.ethProxy;
 
-
       let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
       let nftOwnerT2_1 = info.wallets[info.nextWalletIndex + 3];
@@ -278,16 +304,26 @@ describe("Market", function () {
         onftOwner: nftOwnerT1_2.address,
       };
       await info.appOperator
-        .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
+        .createToken(
+          paramsT1.tid,
+          paramsT1.tData,
+          paramsT1.cnftOwner,
+          paramsT1.onftOwner,
+        );
+
       let paramsT2 = {
         tid: "t2",
-        tData: "0x22",
+        tData: "0x11",
         cnftOwner: nftOwnerT2_1.address,
         onftOwner: nftOwnerT2_2.address,
       };
       await info.appOperator
-        .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
-
+        .createToken(
+          paramsT2.tid,
+          paramsT2.tData,
+          paramsT2.cnftOwner,
+          paramsT2.onftOwner,
+        );
 
       let getGas = async function (tx: any) {
         let result = await tx.wait();
@@ -300,12 +336,12 @@ describe("Market", function () {
 
       let user1_eth_1 = await ethers.provider.getBalance(user1.address);
 
-      let result = await info.marketKol.connect(user1).multiply.staticCall(paramsT1.tid, getTokenAmountWei(1000), {
+      let result = await info.appOperator.connect(user1).multiply.staticCall(paramsT1.tid, getTokenAmountWei(1000), 0, {
         value: BigInt(10) ** BigInt(18) * BigInt(10000),
       });
-      let tx = await info.marketKol
+      let tx = await info.appOperator
         .connect(user1)
-        .multiply(paramsT1.tid, getTokenAmountWei(1000), { value: result.payTokenAmount * BigInt(10) });
+        .multiply(paramsT1.tid, getTokenAmountWei(1000), 0, { value: result.payTokenAmount * BigInt(10) });
       let gas = await getGas(tx);
 
       let user1_eth_2 = await ethers.provider.getBalance(user1.address);
@@ -318,7 +354,6 @@ describe("Market", function () {
       const allInfo = await loadFixture(deployAllContracts);
       const info = allInfo.ethProxy;
 
-
       let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
       let nftOwnerT2_1 = info.wallets[info.nextWalletIndex + 3];
@@ -334,16 +369,26 @@ describe("Market", function () {
         onftOwner: nftOwnerT1_2.address,
       };
       await info.appOperator
-        .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
+        .createToken(
+          paramsT1.tid,
+          paramsT1.tData,
+          paramsT1.cnftOwner,
+          paramsT1.onftOwner,
+        );
+
       let paramsT2 = {
         tid: "t2",
-        tData: "0x22",
+        tData: "0x11",
         cnftOwner: nftOwnerT2_1.address,
         onftOwner: nftOwnerT2_2.address,
       };
       await info.appOperator
-        .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
-
+        .createToken(
+          paramsT2.tid,
+          paramsT2.tData,
+          paramsT2.cnftOwner,
+          paramsT2.onftOwner,
+        );
 
       let getGas = async function (tx: any) {
         let result = await tx.wait();
@@ -356,12 +401,12 @@ describe("Market", function () {
 
       let user1_eth_1 = await ethers.provider.getBalance(user1.address);
 
-      let result_1 = await info.marketKol.connect(user1).multiply.staticCall(paramsT1.tid, getTokenAmountWei(1000), {
+      let result_1 = await info.appOperator.connect(user1).multiply.staticCall(paramsT1.tid, getTokenAmountWei(1000), 0, {
         value: BigInt(10) ** BigInt(18) * BigInt(10000),
       });
-      let tx_1 = await info.marketKol
+      let tx_1 = await info.appOperator
         .connect(user1)
-        .multiply(paramsT1.tid, getTokenAmountWei(1000), { value: result_1.payTokenAmount });
+        .multiply(paramsT1.tid, getTokenAmountWei(1000), 0, { value: result_1.payTokenAmount });
       let gas_1 = await getGas(tx_1);
 
       let user1_eth_2 = await ethers.provider.getBalance(user1.address);
@@ -369,10 +414,10 @@ describe("Market", function () {
       expect(user1_eth_1 - gas_1 - result_1.payTokenAmount).eq(user1_eth_2);
       expect(result_1.nftTokenId).eq(1);
 
-      let result_2 = await info.marketKol.connect(user1).multiplyAdd.staticCall(1, getTokenAmountWei(1000), {
+      let result_2 = await info.appOperator.connect(user1).multiplyAdd.staticCall(1, getTokenAmountWei(1000), 0, {
         value: BigInt(10) ** BigInt(18) * BigInt(10000),
       });
-      let tx_2 = await info.marketKol.connect(user1).multiplyAdd(1, getTokenAmountWei(1000), { value: result_2 });
+      let tx_2 = await info.appOperator.connect(user1).multiplyAdd(1, getTokenAmountWei(1000), 0, { value: result_2 });
       let gas_2 = await getGas(tx_2);
 
       let user1_eth_3 = await ethers.provider.getBalance(user1.address);
@@ -384,7 +429,6 @@ describe("Market", function () {
       const allInfo = await loadFixture(deployAllContracts);
       const info = allInfo.ethProxy;
 
-
       let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
       let nftOwnerT2_1 = info.wallets[info.nextWalletIndex + 3];
@@ -400,16 +444,26 @@ describe("Market", function () {
         onftOwner: nftOwnerT1_2.address,
       };
       await info.appOperator
-        .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
+        .createToken(
+          paramsT1.tid,
+          paramsT1.tData,
+          paramsT1.cnftOwner,
+          paramsT1.onftOwner,
+        );
+
       let paramsT2 = {
         tid: "t2",
-        tData: "0x22",
+        tData: "0x11",
         cnftOwner: nftOwnerT2_1.address,
         onftOwner: nftOwnerT2_2.address,
       };
       await info.appOperator
-        .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
-
+        .createToken(
+          paramsT2.tid,
+          paramsT2.tData,
+          paramsT2.cnftOwner,
+          paramsT2.onftOwner,
+        );
 
       let getGas = async function (tx: any) {
         let result = await tx.wait();
@@ -422,12 +476,12 @@ describe("Market", function () {
 
       let user1_eth_1 = await ethers.provider.getBalance(user1.address);
 
-      let result_1 = await info.marketKol.connect(user1).multiply.staticCall(paramsT1.tid, getTokenAmountWei(1000), {
+      let result_1 = await info.appOperator.connect(user1).multiply.staticCall(paramsT1.tid, getTokenAmountWei(1000), 0, {
         value: BigInt(10) ** BigInt(18) * BigInt(10000),
       });
-      let tx_1 = await info.marketKol
+      let tx_1 = await info.appOperator
         .connect(user1)
-        .multiply(paramsT1.tid, getTokenAmountWei(1000), { value: result_1.payTokenAmount });
+        .multiply(paramsT1.tid, getTokenAmountWei(1000), 0, { value: result_1.payTokenAmount });
       let gas_1 = await getGas(tx_1);
 
       let user1_eth_2 = await ethers.provider.getBalance(user1.address);
@@ -435,12 +489,12 @@ describe("Market", function () {
       expect(user1_eth_1 - gas_1 - result_1.payTokenAmount).eq(user1_eth_2);
       expect(result_1.nftTokenId).eq(1);
 
-      let result_2 = await info.marketKol.connect(user1).multiplyAdd.staticCall(1, getTokenAmountWei(1000), {
+      let result_2 = await info.appOperator.connect(user1).multiplyAdd.staticCall(1, getTokenAmountWei(1000), 0, {
         value: BigInt(10) ** BigInt(18) * BigInt(10000),
       });
-      let tx_2 = await info.marketKol
+      let tx_2 = await info.appOperator
         .connect(user1)
-        .multiplyAdd(1, getTokenAmountWei(1000), { value: result_2 * BigInt(10) });
+        .multiplyAdd(1, getTokenAmountWei(1000), 0, { value: result_2 * BigInt(10) });
       let gas_2 = await getGas(tx_2);
 
       let user1_eth_3 = await ethers.provider.getBalance(user1.address);
@@ -452,7 +506,6 @@ describe("Market", function () {
       for (let i = 0; i < data.length; i++) {
         const allInfo = await loadFixture(deployAllContracts);
         const info = allInfo.ethProxy;
-
 
         let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
@@ -469,16 +522,26 @@ describe("Market", function () {
           onftOwner: nftOwnerT1_2.address,
         };
         await info.appOperator
-          .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
+          .createToken(
+            paramsT1.tid,
+            paramsT1.tData,
+            paramsT1.cnftOwner,
+            paramsT1.onftOwner,
+          );
+
         let paramsT2 = {
           tid: "t2",
-          tData: "0x22",
+          tData: "0x11",
           cnftOwner: nftOwnerT2_1.address,
           onftOwner: nftOwnerT2_2.address,
         };
         await info.appOperator
-          .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
-
+          .createToken(
+            paramsT2.tid,
+            paramsT2.tData,
+            paramsT2.cnftOwner,
+            paramsT2.onftOwner,
+          );
 
         let getGas = async function (tx: any) {
           let result = await tx.wait();
@@ -523,10 +586,10 @@ describe("Market", function () {
         let market_eth_1 = await ethers.provider.getBalance(info.marketKol.getAddress());
 
         // multiply
-        let result = await info.marketKol
+        let result = await info.appOperator
           .connect(user1)
-          .multiply.staticCall(paramsT1.tid, amount, { value: BigInt(10) ** BigInt(18) * BigInt(1000000) });
-        let tx = await info.marketKol.connect(user1).multiply(paramsT1.tid, amount, { value: result.payTokenAmount });
+          .multiply.staticCall(paramsT1.tid, amount, 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000000) });
+        let tx = await info.appOperator.connect(user1).multiply(paramsT1.tid, amount, 0, { value: result.payTokenAmount });
         let gas = await getGas(tx);
 
         let user1_eth_2 = await ethers.provider.getBalance(user1.address);
@@ -613,7 +676,6 @@ describe("Market", function () {
         const allInfo = await loadFixture(deployAllContracts);
         const info = allInfo.ethProxy;
 
-
         let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
         let nftOwnerT2_1 = info.wallets[info.nextWalletIndex + 3];
@@ -629,16 +691,26 @@ describe("Market", function () {
           onftOwner: nftOwnerT1_2.address,
         };
         await info.appOperator
-          .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
+          .createToken(
+            paramsT1.tid,
+            paramsT1.tData,
+            paramsT1.cnftOwner,
+            paramsT1.onftOwner,
+          );
+
         let paramsT2 = {
           tid: "t2",
-          tData: "0x22",
+          tData: "0x11",
           cnftOwner: nftOwnerT2_1.address,
           onftOwner: nftOwnerT2_2.address,
         };
         await info.appOperator
-          .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
-
+          .createToken(
+            paramsT2.tid,
+            paramsT2.tData,
+            paramsT2.cnftOwner,
+            paramsT2.onftOwner,
+          );
 
         let getGas = async function (tx: any) {
           let result = await tx.wait();
@@ -686,10 +758,10 @@ describe("Market", function () {
         let market_eth_1 = await ethers.provider.getBalance(info.marketKol.getAddress());
 
         // multiply part1
-        let result_1 = await info.marketKol
+        let result_1 = await info.appOperator
           .connect(user1)
-          .multiply.staticCall(paramsT1.tid, part1, { value: BigInt(10) ** BigInt(18) * BigInt(1000000) });
-        let tx_1 = await info.marketKol.connect(user1).multiply(paramsT1.tid, part1, { value: result_1.payTokenAmount });
+          .multiply.staticCall(paramsT1.tid, part1, 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000000) });
+        let tx_1 = await info.appOperator.connect(user1).multiply(paramsT1.tid, part1, 0, { value: result_1.payTokenAmount });
         let gas_1 = await getGas(tx_1);
 
         let user1_eth_2 = await ethers.provider.getBalance(user1.address);
@@ -756,11 +828,11 @@ describe("Market", function () {
         expect(user1_eth_1 - user1_eth_2 - gas_1).eq(result_1.payTokenAmount);
 
         // multiplyAdd part2
-        let result_2 = await info.marketKol
+        let result_2 = await info.appOperator
           .connect(user1)
-          .multiplyAdd.staticCall(1, part2, { value: BigInt(10) ** BigInt(18) * BigInt(1000000) });
+          .multiplyAdd.staticCall(1, part2, 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000000) });
 
-        let tx_2 = await info.marketKol.connect(user1).multiplyAdd(1, part2, { value: result_2 });
+        let tx_2 = await info.appOperator.connect(user1).multiplyAdd(1, part2, 0, { value: result_2 });
         let gas_2 = await getGas(tx_2);
 
         //
@@ -829,11 +901,11 @@ describe("Market", function () {
         ///
 
         // multiplyAdd part3
-        let result_3 = await info.marketKol
+        let result_3 = await info.appOperator
           .connect(user1)
-          .multiplyAdd.staticCall(1, part3, { value: BigInt(10) ** BigInt(18) * BigInt(1000000) });
+          .multiplyAdd.staticCall(1, part3, 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000000) });
 
-        let tx_3 = await info.marketKol.connect(user1).multiplyAdd(1, part3, { value: result_3 });
+        let tx_3 = await info.appOperator.connect(user1).multiplyAdd(1, part3, 0, { value: result_3 });
         let gas_3 = await getGas(tx_3);
 
         //
@@ -924,7 +996,6 @@ describe("Market", function () {
       const allInfo = await loadFixture(deployAllContracts);
       const info = allInfo.ethProxy;
 
-
       let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
       let nftOwnerT2_1 = info.wallets[info.nextWalletIndex + 3];
@@ -940,16 +1011,26 @@ describe("Market", function () {
         onftOwner: nftOwnerT1_2.address,
       };
       await info.appOperator
-        .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
+        .createToken(
+          paramsT1.tid,
+          paramsT1.tData,
+          paramsT1.cnftOwner,
+          paramsT1.onftOwner,
+        );
+
       let paramsT2 = {
         tid: "t2",
-        tData: "0x22",
+        tData: "0x11",
         cnftOwner: nftOwnerT2_1.address,
         onftOwner: nftOwnerT2_2.address,
       };
       await info.appOperator
-        .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
-
+        .createToken(
+          paramsT2.tid,
+          paramsT2.tData,
+          paramsT2.cnftOwner,
+          paramsT2.onftOwner,
+        );
 
       let getGas = async function (tx: any) {
         let result = await tx.wait();
@@ -1011,12 +1092,12 @@ describe("Market", function () {
       let market_eth_0 = await ethers.provider.getBalance(info.marketKol.getAddress());
 
       // user1 multiply t1 10000 tokenid=1
-      let result_1 = await info.marketKol
+      let result_1 = await info.appOperator
         .connect(user1)
-        .multiply.staticCall(paramsT1.tid, multiply_amount_1, { value: bignumber });
-      let tx_1 = await info.marketKol
+        .multiply.staticCall(paramsT1.tid, multiply_amount_1, 0, { value: bignumber });
+      let tx_1 = await info.appOperator
         .connect(user1)
-        .multiply(paramsT1.tid, multiply_amount_1, { value: result_1.payTokenAmount });
+        .multiply(paramsT1.tid, multiply_amount_1, 0, { value: result_1.payTokenAmount });
       let gas_1 = await getGas(tx_1);
 
       let user1_eth_1 = await ethers.provider.getBalance(user1.address);
@@ -1081,12 +1162,12 @@ describe("Market", function () {
         .eq(0);
 
       // user1 multiply t1 20000 tokenid=2
-      let result_2 = await info.marketKol
+      let result_2 = await info.appOperator
         .connect(user1)
-        .multiply.staticCall(paramsT1.tid, multiply_amount_2, { value: bignumber });
-      let tx_2 = await info.marketKol
+        .multiply.staticCall(paramsT1.tid, multiply_amount_2, 0, { value: bignumber });
+      let tx_2 = await info.appOperator
         .connect(user1)
-        .multiply(paramsT1.tid, multiply_amount_2, { value: result_2.payTokenAmount });
+        .multiply(paramsT1.tid, multiply_amount_2, 0, { value: result_2.payTokenAmount });
       let gas_2 = await getGas(tx_2);
 
       let user1_eth_2 = await ethers.provider.getBalance(user1.address);
@@ -1153,12 +1234,12 @@ describe("Market", function () {
         .gt(0);
 
       // user1 multiply t2 30000 tokenid=3
-      let result_3 = await info.marketKol
+      let result_3 = await info.appOperator
         .connect(user1)
-        .multiply.staticCall(paramsT2.tid, multiply_amount_3, { value: bignumber });
-      let tx_3 = await info.marketKol
+        .multiply.staticCall(paramsT2.tid, multiply_amount_3, 0, { value: bignumber });
+      let tx_3 = await info.appOperator
         .connect(user1)
-        .multiply(paramsT2.tid, multiply_amount_3, { value: result_3.payTokenAmount });
+        .multiply(paramsT2.tid, multiply_amount_3, 0, { value: result_3.payTokenAmount });
       let gas_3 = await getGas(tx_3);
 
       let user1_eth_3 = await ethers.provider.getBalance(user1.address);
@@ -1225,12 +1306,12 @@ describe("Market", function () {
         .eq(0);
 
       // user1 multiply t2 40000 tokenid=4
-      let result_4 = await info.marketKol
+      let result_4 = await info.appOperator
         .connect(user1)
-        .multiply.staticCall(paramsT2.tid, multiply_amount_4, { value: bignumber });
-      let tx_4 = await info.marketKol
+        .multiply.staticCall(paramsT2.tid, multiply_amount_4, 0, { value: bignumber });
+      let tx_4 = await info.appOperator
         .connect(user1)
-        .multiply(paramsT2.tid, multiply_amount_4, { value: result_4.payTokenAmount });
+        .multiply(paramsT2.tid, multiply_amount_4, 0, { value: result_4.payTokenAmount });
       let gas_4 = await getGas(tx_4);
 
       let user1_eth_4 = await ethers.provider.getBalance(user1.address);
@@ -1298,12 +1379,12 @@ describe("Market", function () {
         .eq(curve_buy_4 - curve_mortgage_4)
         .gt(0);
       // user2 multiply t1 15000 tokenid=5
-      let result_5 = await info.marketKol
+      let result_5 = await info.appOperator
         .connect(user2)
-        .multiply.staticCall(paramsT1.tid, multiply_amount_5, { value: bignumber });
-      let tx_5 = await info.marketKol
+        .multiply.staticCall(paramsT1.tid, multiply_amount_5, 0, { value: bignumber });
+      let tx_5 = await info.appOperator
         .connect(user2)
-        .multiply(paramsT1.tid, multiply_amount_5, { value: result_5.payTokenAmount });
+        .multiply(paramsT1.tid, multiply_amount_5, 0, { value: result_5.payTokenAmount });
       let gas_5 = await getGas(tx_5);
 
       let user1_eth_5 = await ethers.provider.getBalance(user1.address);
@@ -1374,12 +1455,12 @@ describe("Market", function () {
         .gt(0);
 
       // user2 multiply t1 25000 tokenid=6
-      let result_6 = await info.marketKol
+      let result_6 = await info.appOperator
         .connect(user2)
-        .multiply.staticCall(paramsT1.tid, multiply_amount_6, { value: bignumber });
-      let tx_6 = await info.marketKol
+        .multiply.staticCall(paramsT1.tid, multiply_amount_6, 0, { value: bignumber });
+      let tx_6 = await info.appOperator
         .connect(user2)
-        .multiply(paramsT1.tid, multiply_amount_6, { value: result_6.payTokenAmount });
+        .multiply(paramsT1.tid, multiply_amount_6, 0, { value: result_6.payTokenAmount });
       let gas_6 = await getGas(tx_6);
 
       let user1_eth_6 = await ethers.provider.getBalance(user1.address);
@@ -1453,12 +1534,12 @@ describe("Market", function () {
         .gt(0);
 
       // user2 multiply t2 35000 tokenid=7
-      let result_7 = await info.marketKol
+      let result_7 = await info.appOperator
         .connect(user2)
-        .multiply.staticCall(paramsT2.tid, multiply_amount_7, { value: bignumber });
-      let tx_7 = await info.marketKol
+        .multiply.staticCall(paramsT2.tid, multiply_amount_7, 0, { value: bignumber });
+      let tx_7 = await info.appOperator
         .connect(user2)
-        .multiply(paramsT2.tid, multiply_amount_7, { value: result_7.payTokenAmount });
+        .multiply(paramsT2.tid, multiply_amount_7, 0, { value: result_7.payTokenAmount });
       let gas_7 = await getGas(tx_7);
 
       let user1_eth_7 = await ethers.provider.getBalance(user1.address);
@@ -1530,12 +1611,12 @@ describe("Market", function () {
         .gt(0);
 
       // user2 multiply t2 45000 tokenid=8
-      let result_8 = await info.marketKol
+      let result_8 = await info.appOperator
         .connect(user2)
-        .multiply.staticCall(paramsT2.tid, multiply_amount_8, { value: bignumber });
-      let tx_8 = await info.marketKol
+        .multiply.staticCall(paramsT2.tid, multiply_amount_8, 0, { value: bignumber });
+      let tx_8 = await info.appOperator
         .connect(user2)
-        .multiply(paramsT2.tid, multiply_amount_8, { value: result_8.payTokenAmount });
+        .multiply(paramsT2.tid, multiply_amount_8, 0, { value: result_8.payTokenAmount });
       let gas_8 = await getGas(tx_8);
 
       let user1_eth_8 = await ethers.provider.getBalance(user1.address);
@@ -1611,12 +1692,12 @@ describe("Market", function () {
         .gt(0);
 
       // user1 multiplyAdd t1 20000 tokenid=1
-      let result_add_1 = await info.marketKol
+      let result_add_1 = await info.appOperator
         .connect(user1)
-        .multiplyAdd.staticCall(result_1.nftTokenId, multiply_add_amount_1, { value: bignumber });
-      let tx_add_1 = await info.marketKol
+        .multiplyAdd.staticCall(result_1.nftTokenId, multiply_add_amount_1, 0, { value: bignumber });
+      let tx_add_1 = await info.appOperator
         .connect(user1)
-        .multiplyAdd(result_1.nftTokenId, multiply_add_amount_1, { value: result_add_1 });
+        .multiplyAdd(result_1.nftTokenId, multiply_add_amount_1, 0, { value: result_add_1 });
       let gas_add_1 = await getGas(tx_add_1);
 
       let user1_eth_9 = await ethers.provider.getBalance(user1.address);
@@ -1694,12 +1775,12 @@ describe("Market", function () {
         .gt(0);
 
       // user1 multiplyAdd t1 30000 tokenid=2
-      let result_add_2 = await info.marketKol
+      let result_add_2 = await info.appOperator
         .connect(user1)
-        .multiplyAdd.staticCall(result_2.nftTokenId, multiply_add_amount_2, { value: bignumber });
-      let tx_add_2 = await info.marketKol
+        .multiplyAdd.staticCall(result_2.nftTokenId, multiply_add_amount_2, 0, { value: bignumber });
+      let tx_add_2 = await info.appOperator
         .connect(user1)
-        .multiplyAdd(result_2.nftTokenId, multiply_add_amount_2, { value: result_add_2 });
+        .multiplyAdd(result_2.nftTokenId, multiply_add_amount_2, 0, { value: result_add_2 });
       let gas_add_2 = await getGas(tx_add_2);
 
       let user1_eth_10 = await ethers.provider.getBalance(user1.address);
@@ -1787,12 +1868,12 @@ describe("Market", function () {
         .gt(0);
 
       // user1 multiplyAdd t2 40000 tokenid=3
-      let result_add_3 = await info.marketKol
+      let result_add_3 = await info.appOperator
         .connect(user1)
-        .multiplyAdd.staticCall(result_3.nftTokenId, multiply_add_amount_3, { value: bignumber });
-      let tx_add_3 = await info.marketKol
+        .multiplyAdd.staticCall(result_3.nftTokenId, multiply_add_amount_3, 0, { value: bignumber });
+      let tx_add_3 = await info.appOperator
         .connect(user1)
-        .multiplyAdd(result_3.nftTokenId, multiply_add_amount_3, { value: result_add_3 });
+        .multiplyAdd(result_3.nftTokenId, multiply_add_amount_3, 0, { value: result_add_3 });
       let gas_add_3 = await getGas(tx_add_3);
 
       let user1_eth_11 = await ethers.provider.getBalance(user1.address);
@@ -1880,12 +1961,12 @@ describe("Market", function () {
         .gt(0);
 
       // user1 multiplyAdd t2 50000 tokenid=4
-      let result_add_4 = await info.marketKol
+      let result_add_4 = await info.appOperator
         .connect(user1)
-        .multiplyAdd.staticCall(result_4.nftTokenId, multiply_add_amount_4, { value: bignumber });
-      let tx_add_4 = await info.marketKol
+        .multiplyAdd.staticCall(result_4.nftTokenId, multiply_add_amount_4, 0, { value: bignumber });
+      let tx_add_4 = await info.appOperator
         .connect(user1)
-        .multiplyAdd(result_4.nftTokenId, multiply_add_amount_4, { value: result_add_4 });
+        .multiplyAdd(result_4.nftTokenId, multiply_add_amount_4, 0, { value: result_add_4 });
       let gas_add_4 = await getGas(tx_add_4);
 
       let user1_eth_12 = await ethers.provider.getBalance(user1.address);
@@ -1982,12 +2063,12 @@ describe("Market", function () {
         .eq(curve_buy_12 - curve_mortgage_12)
         .gt(0);
       // user2 multiplyAdd t1 25000 tokenid=5
-      let result_add_5 = await info.marketKol
+      let result_add_5 = await info.appOperator
         .connect(user2)
-        .multiplyAdd.staticCall(result_5.nftTokenId, multiply_add_amount_5, { value: bignumber });
-      let tx_add_5 = await info.marketKol
+        .multiplyAdd.staticCall(result_5.nftTokenId, multiply_add_amount_5, 0, { value: bignumber });
+      let tx_add_5 = await info.appOperator
         .connect(user2)
-        .multiplyAdd(result_5.nftTokenId, multiply_add_amount_5, { value: result_add_5 });
+        .multiplyAdd(result_5.nftTokenId, multiply_add_amount_5, 0, { value: result_add_5 });
       let gas_add_5 = await getGas(tx_add_5);
 
       let user1_eth_13 = await ethers.provider.getBalance(user1.address);
@@ -2092,12 +2173,12 @@ describe("Market", function () {
         .gt(0);
 
       // user2 multiplyAdd t1 35000 tokenid=6
-      let result_add_6 = await info.marketKol
+      let result_add_6 = await info.appOperator
         .connect(user2)
-        .multiplyAdd.staticCall(result_6.nftTokenId, multiply_add_amount_6, { value: bignumber });
-      let tx_add_6 = await info.marketKol
+        .multiplyAdd.staticCall(result_6.nftTokenId, multiply_add_amount_6, 0, { value: bignumber });
+      let tx_add_6 = await info.appOperator
         .connect(user2)
-        .multiplyAdd(result_6.nftTokenId, multiply_add_amount_6, { value: result_add_6 });
+        .multiplyAdd(result_6.nftTokenId, multiply_add_amount_6, 0, { value: result_add_6 });
       let gas_add_6 = await getGas(tx_add_6);
 
       let user1_eth_14 = await ethers.provider.getBalance(user1.address);
@@ -2205,12 +2286,12 @@ describe("Market", function () {
         .gt(0);
 
       // user2 multiplyAdd t2 45000 tokenid=7
-      let result_add_7 = await info.marketKol
+      let result_add_7 = await info.appOperator
         .connect(user2)
-        .multiplyAdd.staticCall(result_7.nftTokenId, multiply_add_amount_7, { value: bignumber });
-      let tx_add_7 = await info.marketKol
+        .multiplyAdd.staticCall(result_7.nftTokenId, multiply_add_amount_7, 0, { value: bignumber });
+      let tx_add_7 = await info.appOperator
         .connect(user2)
-        .multiplyAdd(result_7.nftTokenId, multiply_add_amount_7, { value: result_add_7 });
+        .multiplyAdd(result_7.nftTokenId, multiply_add_amount_7, 0, { value: result_add_7 });
       let gas_add_7 = await getGas(tx_add_7);
 
       let user1_eth_15 = await ethers.provider.getBalance(user1.address);
@@ -2319,12 +2400,12 @@ describe("Market", function () {
         .gt(0);
 
       // user2 multiplyAdd t2 55000 tokenid=8
-      let result_add_8 = await info.marketKol
+      let result_add_8 = await info.appOperator
         .connect(user2)
-        .multiplyAdd.staticCall(result_8.nftTokenId, multiply_add_amount_8, { value: bignumber });
-      let tx_add_8 = await info.marketKol
+        .multiplyAdd.staticCall(result_8.nftTokenId, multiply_add_amount_8, 0, { value: bignumber });
+      let tx_add_8 = await info.appOperator
         .connect(user2)
-        .multiplyAdd(result_8.nftTokenId, multiply_add_amount_8, { value: result_add_8 });
+        .multiplyAdd(result_8.nftTokenId, multiply_add_amount_8, 0, { value: result_add_8 });
       let gas_add_8 = await getGas(tx_add_8);
 
       let user1_eth_16 = await ethers.provider.getBalance(user1.address);
@@ -2493,7 +2574,6 @@ describe("Market", function () {
         const allInfo = await loadFixture(deployAllContracts);
         const info = allInfo.ethProxy;
 
-
         let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
         let user1 = info.wallets[info.nextWalletIndex + 5];
@@ -2506,16 +2586,20 @@ describe("Market", function () {
           onftOwner: nftOwnerT1_2.address,
         };
         await info.appOperator
-          .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
-
+          .createToken(
+            paramsT1.tid,
+            paramsT1.tData,
+            paramsT1.cnftOwner,
+            paramsT1.onftOwner,
+          );
 
         let mortgage_fee_eth_1 = await ethers.provider.getBalance(info.mortgageFeeWallet.address);
 
         // multiply
-        let result = await info.marketKol
+        let result = await info.appOperator
           .connect(user1)
-          .multiply.staticCall(paramsT1.tid, amount, { value: BigInt(10) ** BigInt(18) * BigInt(1000000) });
-        await info.marketKol.connect(user1).multiply(paramsT1.tid, amount, { value: result.payTokenAmount });
+          .multiply.staticCall(paramsT1.tid, amount, 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000000) });
+        await info.appOperator.connect(user1).multiply(paramsT1.tid, amount, 0, { value: result.payTokenAmount });
 
         let mortgage_fee_eth_2 = await ethers.provider.getBalance(info.mortgageFeeWallet.address);
 

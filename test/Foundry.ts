@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import { deployAllContracts, ZERO_ADDRESS } from "./shared/deploy";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { KolCurve } from "../typechain-types";
+import { KolCurve, PublicNFT } from "../typechain-types";
 
 describe("Foundry", function () {
   it("deploy", async function () {
@@ -266,21 +266,6 @@ describe("Foundry", function () {
     expect(await info.foundry.nextAppId()).eq(3);
   });
 
-  it("setAppOperator", async function () {
-    const allInfo = await loadFixture(deployAllContracts);
-    const info = allInfo.eth;
-
-    expect((await info.foundry.apps(info.appId)).operator).eq(await info.kol.getAddress());
-
-    let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
-    await expect(info.foundry.setAppOperator(info.appId, newAppOperatorWallet.address)).revertedWith("AOE");
-
-    await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
-
-    expect((await info.foundry.apps(info.appId)).operator).eq(newAppOperatorWallet.address);
-    expect(await info.kol.getAddress()).not.eq(newAppOperatorWallet.address);
-  });
-
   it("setAppOwner", async function () {
     const allInfo = await loadFixture(deployAllContracts);
     const info = allInfo.eth;
@@ -308,187 +293,17 @@ describe("Foundry", function () {
 
     expect((await info.foundry.apps(info.appId)).operator).eq(await info.kol.getAddress());
 
-    await expect(
-      info.foundry.createToken(
-        info.appId,
-        "t1",
-        "0x",
-        [5000, 95000],
-        [info.deployWallet.address, info.deployWallet.address],
-        ["0x", "0x"],
-      ),
-    ).revertedWith("AOPE");
-
-    let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
-    await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
-    expect((await info.foundry.apps(info.appId)).operator).eq(newAppOperatorWallet.address);
-    expect(await info.kol.getAddress()).not.eq(newAppOperatorWallet.address);
-
-    await expect(
-      info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(
-          0,
-          "t1",
-          "0x",
-          [5000, 95000],
-          [info.deployWallet.address, info.deployWallet.address],
-          ["0x", "0x"],
-        ),
-    ).revertedWith("AE");
-
-    await expect(
-      info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(
-          info.appId + 1,
-          "t1",
-          "0x",
-          [5000, 95000],
-          [info.deployWallet.address, info.deployWallet.address],
-          ["0x", "0x"],
-        ),
-    ).revertedWith("AE");
-
-    await expect(
-      info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(
-          info.appId,
-          "t1",
-          "0x",
-          [5001, 95000],
-          [info.deployWallet.address, info.deployWallet.address],
-          ["0x", "0x"],
-        ),
-    ).revertedWith("TPE");
-
-    await expect(
-      info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(info.appId, "t1", "0x", [5000, 95000], [ZERO_ADDRESS, info.deployWallet.address], ["0x", "0x"]),
-    ).revertedWith("ADDE");
-
-    await expect(
-      info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(info.appId, "t1", "0x", [5000, 95000], [info.deployWallet.address, ZERO_ADDRESS], ["0x", "0x"]),
-    ).revertedWith("ADDE");
-
-    await expect(
-      info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(
-          info.appId,
-          "t1",
-          "0x",
-          [5000, 95000],
-          [info.deployWallet.address, info.deployWallet.address],
-          ["0x"],
-        ),
-    ).revertedWith("LE2");
-
-    await expect(
-      info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(info.appId, "t1", "0x", [5000, 95000], [info.deployWallet.address], ["0x", "0x"]),
-    ).revertedWith("LE1");
-
-    await expect(
-      info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(
-          info.appId,
-          "t1",
-          "0x",
-          [5000],
-          [info.deployWallet.address, info.deployWallet.address],
-          ["0x", "0x"],
-        ),
-    ).revertedWith("LE1");
-
-    let tx = await info.foundry
-      .connect(newAppOperatorWallet)
-      .createToken(
-        info.appId,
-        "t1",
-        "0x",
-        [5000, 95000],
-        [info.wallets[1].address, info.wallets[2].address],
-        ["0x", "0x"],
-      );
-
-    await expect(tx)
-      .to.emit(info.foundry, "CreateToken")
-      .withArgs(
-        info.appId,
-        "t1",
-        "0x",
-        [1, 2],
-        [5000, 95000],
-        [info.wallets[1].address, info.wallets[2].address],
-        ["0x", "0x"],
-        newAppOperatorWallet.address,
-      );
-
-    await expect(
-      info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(
-          info.appId,
-          "t1",
-          "0x",
-          [5000, 95000],
-          [info.deployWallet.address, info.deployWallet.address],
-          ["0x", "0x"],
-        ),
-    ).revertedWith("TE");
-
-    await info.foundry
-      .connect(newAppOperatorWallet)
-      .createToken(
-        info.appId,
-        "t2",
-        "0x11",
-        [5000, 95000],
-        [info.wallets[3].address, info.wallets[4].address],
-        ["0x22", "0x33"],
-      );
-
-    expect(await info.foundry.tokenData(info.appId, "t1")).eq("0x");
-    expect(await info.foundry.tokenData(info.appId, "t2")).eq("0x11");
-
-    const info1 = await info.publicNFTKol.tokenIdToInfo(1);
-    const info2 = await info.publicNFTKol.tokenIdToInfo(2);
-    const info3 = await info.publicNFTKol.tokenIdToInfo(3);
-    const info4 = await info.publicNFTKol.tokenIdToInfo(4);
-    expect(info1.tid).eq("t1");
-    expect(info2.tid).eq("t1");
-    expect(info1.percent).eq(5000);
-    expect(info2.percent).eq(95000);
-    expect(info1.data).eq("0x");
-    expect(info2.data).eq("0x");
-    expect(info1._owner).eq(info.wallets[1].address);
-    expect(info2._owner).eq(info.wallets[2].address);
-
-    expect(info3.tid).eq("t2");
-    expect(info4.tid).eq("t2");
-    expect(info3.percent).eq(5000);
-    expect(info4.percent).eq(95000);
-    expect(info3.data).eq("0x22");
-    expect(info4.data).eq("0x33");
-    expect(info3._owner).eq(info.wallets[3].address);
-    expect(info4._owner).eq(info.wallets[4].address);
-
     // create app
     let app2OwnerWallet = info.wallets[info.nextWalletIndex + 1];
     let app2OperatorWallet = info.wallets[info.nextWalletIndex + 2];
+
+    let firstAppId = 1
 
     await expect(
       info.foundry
         .connect(app2OperatorWallet)
         .createToken(
-          info.appId + 1,
+          firstAppId + 1,
           "t2",
           "0x",
           [5000, 95000],
@@ -509,13 +324,199 @@ describe("Foundry", function () {
     await info.foundry
       .connect(app2OperatorWallet)
       .createToken(
-        info.appId + 1,
+        firstAppId + 1,
         "t2",
+        "0x22",
+        [5000, 95000],
+        [info.deployWallet.address, info.deployWallet.address],
+        ["0x21", "0x22"],
+      );
+
+    let appId_2 = 2;
+
+    await expect(
+      info.foundry.createToken(
+        appId_2,
+        "t1",
         "0x",
         [5000, 95000],
         [info.deployWallet.address, info.deployWallet.address],
         ["0x", "0x"],
+      ),
+    ).revertedWith("AOPE");
+
+    await expect(
+      info.foundry
+        .connect(app2OperatorWallet)
+        .createToken(
+          0,
+          "t1",
+          "0x",
+          [5000, 95000],
+          [info.deployWallet.address, info.deployWallet.address],
+          ["0x", "0x"],
+        ),
+    ).revertedWith("AE");
+
+    await expect(
+      info.foundry
+        .connect(app2OperatorWallet)
+        .createToken(
+          appId_2 + 1,
+          "t1",
+          "0x",
+          [5000, 95000],
+          [info.deployWallet.address, info.deployWallet.address],
+          ["0x", "0x"],
+        ),
+    ).revertedWith("AE");
+
+    await expect(
+      info.foundry
+        .connect(app2OperatorWallet)
+        .createToken(
+          appId_2,
+          "t1",
+          "0x",
+          [5001, 95000],
+          [info.deployWallet.address, info.deployWallet.address],
+          ["0x", "0x"],
+        ),
+    ).revertedWith("TPE");
+
+    await expect(
+      info.foundry
+        .connect(app2OperatorWallet)
+        .createToken(appId_2, "t1", "0x", [5000, 95000], [ZERO_ADDRESS, info.deployWallet.address], ["0x", "0x"]),
+    ).revertedWith("ADDE");
+
+    await expect(
+      info.foundry
+        .connect(app2OperatorWallet)
+        .createToken(appId_2, "t1", "0x", [5000, 95000], [info.deployWallet.address, ZERO_ADDRESS], ["0x", "0x"]),
+    ).revertedWith("ADDE");
+
+    await expect(
+      info.foundry
+        .connect(app2OperatorWallet)
+        .createToken(
+          appId_2,
+          "t1",
+          "0x",
+          [5000, 95000],
+          [info.deployWallet.address, info.deployWallet.address],
+          ["0x"],
+        ),
+    ).revertedWith("LE2");
+
+    await expect(
+      info.foundry
+        .connect(app2OperatorWallet)
+        .createToken(appId_2, "t1", "0x", [5000, 95000], [info.deployWallet.address], ["0x", "0x"]),
+    ).revertedWith("LE1");
+
+    await expect(
+      info.foundry
+        .connect(app2OperatorWallet)
+        .createToken(
+          appId_2,
+          "t1",
+          "0x",
+          [5000],
+          [info.deployWallet.address, info.deployWallet.address],
+          ["0x", "0x"],
+        ),
+    ).revertedWith("LE1");
+
+    let tx = await info.foundry
+      .connect(app2OperatorWallet)
+      .createToken(
+        appId_2,
+        "t1",
+        "0x11",
+        [5000, 95000],
+        [info.wallets[1].address, info.wallets[2].address],
+        ["0x11", "0x12"],
       );
+
+    await expect(tx)
+      .to.emit(info.foundry, "CreateToken")
+      .withArgs(
+        appId_2,
+        "t1",
+        "0x11",
+        [3, 4],
+        [5000, 95000],
+        [info.wallets[1].address, info.wallets[2].address],
+        ["0x11", "0x12"],
+        app2OperatorWallet.address,
+      );
+
+    await expect(
+      info.foundry
+        .connect(app2OperatorWallet)
+        .createToken(
+          appId_2,
+          "t1",
+          "0x",
+          [5000, 95000],
+          [info.deployWallet.address, info.deployWallet.address],
+          ["0x", "0x"],
+        ),
+    ).revertedWith("TE");
+
+    await info.foundry
+      .connect(app2OperatorWallet)
+      .createToken(
+        appId_2,
+        "t3",
+        "0x33",
+        [5000, 95000],
+        [info.wallets[3].address, info.wallets[4].address],
+        ["0x31", "0x32"],
+      );
+
+    expect(await info.foundry.tokenData(appId_2, "t1")).eq("0x11");
+    expect(await info.foundry.tokenData(appId_2, "t2")).eq("0x22");
+    expect(await info.foundry.tokenData(appId_2, "t3")).eq("0x33");
+
+
+    let publicNFTKol = (await ethers.getContractAt("PublicNFT", (await info.foundry.apps(appId_2)).publicNFT)) as PublicNFT;
+
+    const info1 = await publicNFTKol.tokenIdToInfo(1);
+    const info2 = await publicNFTKol.tokenIdToInfo(2);
+    const info3 = await publicNFTKol.tokenIdToInfo(3);
+    const info4 = await publicNFTKol.tokenIdToInfo(4);
+    const info5 = await publicNFTKol.tokenIdToInfo(5);
+    const info6 = await publicNFTKol.tokenIdToInfo(6);
+
+    expect(info1.tid).eq("t2");
+    expect(info2.tid).eq("t2");
+    expect(info1.percent).eq(5000);
+    expect(info2.percent).eq(95000);
+    expect(info1.data).eq("0x21");
+    expect(info2.data).eq("0x22");
+    expect(info1._owner).eq(info.deployWallet.address);
+    expect(info2._owner).eq(info.deployWallet.address);
+
+    expect(info3.tid).eq("t1");
+    expect(info4.tid).eq("t1");
+    expect(info3.percent).eq(5000);
+    expect(info4.percent).eq(95000);
+    expect(info3.data).eq("0x11");
+    expect(info4.data).eq("0x12");
+    expect(info3._owner).eq(info.wallets[1].address);
+    expect(info4._owner).eq(info.wallets[2].address);
+
+    expect(info5.tid).eq("t3");
+    expect(info6.tid).eq("t3");
+    expect(info5.percent).eq(5000);
+    expect(info6.percent).eq(95000);
+    expect(info5.data).eq("0x31");
+    expect(info6.data).eq("0x32");
+    expect(info5._owner).eq(info.wallets[3].address);
+    expect(info6._owner).eq(info.wallets[4].address);
+
   });
 
   it("createApp loop", async function () {
@@ -576,8 +577,21 @@ describe("Foundry", function () {
 
     expect((await info.foundry.apps(info.appId)).operator).eq(await info.kol.getAddress());
 
-    let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
-    await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
+    // create app
+    let app2OwnerWallet = info.wallets[info.nextWalletIndex + 1];
+    let app2OperatorWallet = info.wallets[info.nextWalletIndex + 2];
+
+    await info.foundry.createApp(
+      "app2",
+      app2OwnerWallet.address,
+      app2OperatorWallet.address,
+      await info.kolCurve.getAddress(),
+      ZERO_ADDRESS,
+      info.buySellFee,
+    );
+
+    let appId_2 = info.appId + 1;
+    let publicNFTKol = (await ethers.getContractAt("PublicNFT", (await info.foundry.apps(appId_2)).publicNFT)) as PublicNFT;
 
     for (let i = 1; i <= 100; i++) {
       let tid = `tid${i}`;
@@ -585,30 +599,30 @@ describe("Foundry", function () {
       let nft1Data = ethers.AbiCoder.defaultAbiCoder().encode(["string", "uint256", "uint256"], [tid, i, 1]);
       let nft2Data = ethers.AbiCoder.defaultAbiCoder().encode(["string", "uint256", "uint256"], [tid, i, 2]);
 
-      expect(await info.foundry.tokenData(info.appId, tid)).eq("0x");
-      expect(await info.foundry.tokenExist(info.appId, tid)).eq(false);
+      expect(await info.foundry.tokenData(appId_2, tid)).eq("0x");
+      expect(await info.foundry.tokenExist(appId_2, tid)).eq(false);
 
-      expect(await info.publicNFTKol.totalSupply()).eq(2 * i - 2);
+      expect(await publicNFTKol.totalSupply()).eq(2 * i - 2);
 
-      await expect(info.publicNFTKol.ownerOf(2 * i - 1)).revertedWith("ERC721: invalid token ID");
-      await expect(info.publicNFTKol.ownerOf(2 * i)).revertedWith("ERC721: invalid token ID");
+      await expect(publicNFTKol.ownerOf(2 * i - 1)).revertedWith("ERC721: invalid token ID");
+      await expect(publicNFTKol.ownerOf(2 * i)).revertedWith("ERC721: invalid token ID");
 
-      await expect(info.publicNFTKol.tokenIdToInfo(2 * i - 1)).revertedWith("ERC721: invalid token ID");
-      await expect(info.publicNFTKol.tokenIdToInfo(2 * i)).revertedWith("ERC721: invalid token ID");
+      await expect(publicNFTKol.tokenIdToInfo(2 * i - 1)).revertedWith("ERC721: invalid token ID");
+      await expect(publicNFTKol.tokenIdToInfo(2 * i)).revertedWith("ERC721: invalid token ID");
 
-      let tokenIds = await info.publicNFTKol.tidToTokenIds(tid);
+      let tokenIds = await publicNFTKol.tidToTokenIds(tid);
       expect(tokenIds.length).eq(0);
 
-      let infos = await info.publicNFTKol.tidToInfos(tid);
+      let infos = await publicNFTKol.tidToInfos(tid);
       expect(infos.tokenIds.length).eq(0);
       expect(infos.percents.length).eq(0);
       expect(infos.data.length).eq(0);
       expect(infos.owners.length).eq(0);
 
       let tx = await info.foundry
-        .connect(newAppOperatorWallet)
+        .connect(app2OperatorWallet)
         .createToken(
-          info.appId,
+          appId_2,
           tid,
           tData,
           [5000, 95000],
@@ -619,24 +633,24 @@ describe("Foundry", function () {
       await expect(tx)
         .to.emit(info.foundry, "CreateToken")
         .withArgs(
-          info.appId,
+          appId_2,
           tid,
           tData,
           [2 * i - 1, 2 * i],
           [5000, 95000],
           [info.wallets[1].address, info.wallets[2].address],
           [nft1Data, nft2Data],
-          newAppOperatorWallet.address,
+          app2OperatorWallet.address,
         );
 
-      expect(await info.foundry.tokenData(info.appId, tid)).eq(tData);
-      expect(await info.foundry.tokenExist(info.appId, tid)).eq(true);
+      expect(await info.foundry.tokenData(appId_2, tid)).eq(tData);
+      expect(await info.foundry.tokenExist(appId_2, tid)).eq(true);
 
-      expect(await info.publicNFTKol.ownerOf(2 * i - 1)).eq(info.wallets[1].address);
-      expect(await info.publicNFTKol.ownerOf(2 * i)).eq(info.wallets[2].address);
+      expect(await publicNFTKol.ownerOf(2 * i - 1)).eq(info.wallets[1].address);
+      expect(await publicNFTKol.ownerOf(2 * i)).eq(info.wallets[2].address);
 
-      let info1 = await info.publicNFTKol.tokenIdToInfo(2 * i - 1);
-      let info2 = await info.publicNFTKol.tokenIdToInfo(2 * i);
+      let info1 = await publicNFTKol.tokenIdToInfo(2 * i - 1);
+      let info2 = await publicNFTKol.tokenIdToInfo(2 * i);
 
       expect(info1.tid).eq(tid);
       expect(info2.tid).eq(tid);
@@ -647,15 +661,15 @@ describe("Foundry", function () {
       expect(info1._owner).eq(info.wallets[1].address);
       expect(info2._owner).eq(info.wallets[2].address);
 
-      expect(await info.publicNFTKol.totalSupply()).eq(2 * i);
+      expect(await publicNFTKol.totalSupply()).eq(2 * i);
 
-      tokenIds = await info.publicNFTKol.tidToTokenIds(tid);
+      tokenIds = await publicNFTKol.tidToTokenIds(tid);
       expect(tokenIds.length).eq(2);
 
       expect(tokenIds[0]).eq(2 * i - 1);
       expect(tokenIds[1]).eq(2 * i);
 
-      infos = await info.publicNFTKol.tidToInfos(tid);
+      infos = await publicNFTKol.tidToInfos(tid);
       expect(infos.tokenIds.length).eq(2);
       expect(infos.percents.length).eq(2);
       expect(infos.data.length).eq(2);

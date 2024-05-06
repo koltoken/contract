@@ -39,8 +39,6 @@ interface IFoundry {
 
   event SetAppOwner(uint256 appId, address newOwner, address sender);
 
-  event SetAppOperator(uint256 appId, address newOperator, address sender);
-
   event SetMortgageFee(uint256 appId, uint256 newMortgageFee, address sender);
 
   event SetMortgageFeeRecipient(uint256 appId, address newMortgageFeeOwner, address sender);
@@ -90,8 +88,6 @@ interface IFoundry {
   ) external returns (uint256[] memory tokenIds);
 
   function setAppOwner(uint256 appId, address newOwner) external;
-
-  function setAppOperator(uint256 appId, address newOperator) external;
 
   function setMortgageFee(uint256 appId, uint256 newMortgageFee) external;
 

@@ -80,23 +80,20 @@ describe("Market", function () {
 
     it("buy revert", async function () {
       const allInfo = await loadFixture(deployAllContracts);
-      const info = allInfo.eth;
+      const info = allInfo.ethProxy;
 
-      let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
+
       let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
 
-      await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
       let params = {
         tid: "t1",
         tData: "0x11",
-        nftPercents: [5000, 95000],
-        nftOwers: [nftOwner1.address, nftOwner2.address],
-        nftData: ["0x22", "0x33"],
+        cnftOwner: nftOwner1.address,
+        onftOwner: nftOwner2.address,
       };
-      await info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+      await info.appOperator
+        .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
 
       // not tid
       await expect(
@@ -121,9 +118,8 @@ describe("Market", function () {
 
     it("sell revert", async function () {
       const allInfo = await loadFixture(deployAllContracts);
-      const info = allInfo.eth;
+      const info = allInfo.ethProxy;
 
-      let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
       let nftOwnerT1U1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwnerT1U2 = info.wallets[info.nextWalletIndex + 2];
       let nftOwnerT2U1 = info.wallets[info.nextWalletIndex + 3];
@@ -132,41 +128,22 @@ describe("Market", function () {
       let user2 = info.wallets[info.nextWalletIndex + 6];
       let user3 = info.wallets[info.nextWalletIndex + 7];
 
-      await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
       let paramsT1 = {
         tid: "t1",
         tData: "0x11",
-        nftPercents: [5000, 95000],
-        nftOwers: [nftOwnerT1U1.address, nftOwnerT1U2.address],
-        nftData: ["0x22", "0x33"],
+        cnftOwner: nftOwnerT1U1.address,
+        onftOwner: nftOwnerT1U2.address,
       };
-      await info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(
-          info.appId,
-          paramsT1.tid,
-          paramsT1.tData,
-          paramsT1.nftPercents,
-          paramsT1.nftOwers,
-          paramsT1.nftData,
-        );
+      await info.appOperator
+        .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
       let paramsT2 = {
         tid: "t2",
-        tData: "0x11",
-        nftPercents: [5000, 95000],
-        nftOwers: [nftOwnerT2U1.address, nftOwnerT2U2.address],
-        nftData: ["0x22", "0x33"],
+        tData: "0x22",
+        cnftOwner: nftOwnerT2U1.address,
+        onftOwner: nftOwnerT2U2.address,
       };
-      await info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(
-          info.appId,
-          paramsT2.tid,
-          paramsT2.tData,
-          paramsT2.nftPercents,
-          paramsT2.nftOwers,
-          paramsT2.nftData,
-        );
+      await info.appOperator
+        .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
 
       // not tid
       await expect(info.marketKol.sell("t123", getTokenAmountWei(1000))).revertedWith("TE");
@@ -201,24 +178,21 @@ describe("Market", function () {
 
     it("buy refundETH result and sell result", async function () {
       const allInfo = await loadFixture(deployAllContracts);
-      const info = allInfo.eth;
+      const info = allInfo.ethProxy;
 
-      let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
+
       let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
       let user1 = info.wallets[info.nextWalletIndex + 3];
 
-      await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
       let params = {
         tid: "t1",
         tData: "0x11",
-        nftPercents: [5000, 95000],
-        nftOwers: [nftOwner1.address, nftOwner2.address],
-        nftData: ["0x22", "0x33"],
+        cnftOwner: nftOwner1.address,
+        onftOwner: nftOwner2.address,
       };
-      await info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+      await info.appOperator
+        .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
 
       let buyAmount = getTokenAmountWei(1000);
 
@@ -255,9 +229,9 @@ describe("Market", function () {
     it("buy one", async function () {
       for (let i = 0; i < data.length; i++) {
         const allInfo = await loadFixture(deployAllContracts);
-        const info = allInfo.eth;
+        const info = allInfo.ethProxy;
 
-        let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
+
         let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
         let user1 = info.wallets[info.nextWalletIndex + 3];
@@ -265,17 +239,14 @@ describe("Market", function () {
         let buyAmount = BigInt(10) ** BigInt(18) * BigInt(data[i].buyAmount);
         let expectNeedEth = data[i].expectNeedEth;
 
-        await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
         let params = {
           tid: "t1",
           tData: "0x11",
-          nftPercents: [5000, 95000],
-          nftOwers: [nftOwner1.address, nftOwner2.address],
-          nftData: ["0x22", "0x33"],
+          cnftOwner: nftOwner1.address,
+          onftOwner: nftOwner2.address,
         };
-        await info.foundry
-          .connect(newAppOperatorWallet)
-          .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+        await info.appOperator
+          .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
 
         let needEth = await info.marketKol.buy.staticCall(params.tid, buyAmount, {
           value: BigInt(10) ** BigInt(18) * BigInt("10000000000"),
@@ -323,9 +294,9 @@ describe("Market", function () {
     it("buy multi", async function () {
       for (let i = 0; i < data.length; i++) {
         const allInfo = await loadFixture(deployAllContracts);
-        const info = allInfo.eth;
+        const info = allInfo.ethProxy;
 
-        let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
+
         let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
         let user1 = info.wallets[info.nextWalletIndex + 3];
@@ -343,17 +314,14 @@ describe("Market", function () {
         let part4 = (buyAmount - part1) / BigInt(3);
         let part5 = buyAmount - part1 - part2 - part3 - part4;
 
-        await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
         let params = {
           tid: "t1",
           tData: "0x11",
-          nftPercents: [5000, 95000],
-          nftOwers: [nftOwner1.address, nftOwner2.address],
-          nftData: ["0x22", "0x33"],
+          cnftOwner: nftOwner1.address,
+          onftOwner: nftOwner2.address,
         };
-        await info.foundry
-          .connect(newAppOperatorWallet)
-          .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+        await info.appOperator
+          .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
 
         let user1Eth1 = await ethers.provider.getBalance(user1.address);
         let marketKolEth1 = await ethers.provider.getBalance(await info.marketKol.getAddress());
@@ -552,9 +520,9 @@ describe("Market", function () {
     it("buy one and sell one", async function () {
       for (let i = 0; i < data.length; i++) {
         const allInfo = await loadFixture(deployAllContracts);
-        const info = allInfo.eth;
+        const info = allInfo.ethProxy;
 
-        let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
+
         let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
         let user1 = info.wallets[info.nextWalletIndex + 3];
@@ -562,17 +530,14 @@ describe("Market", function () {
         let buyAmount = getTokenAmountWei(data[i].buyAmount);
         let expectNeedEth = data[i].expectNeedEth;
 
-        await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
         let params = {
           tid: "t1",
           tData: "0x11",
-          nftPercents: [5000, 95000],
-          nftOwers: [nftOwner1.address, nftOwner2.address],
-          nftData: ["0x22", "0x33"],
+          cnftOwner: nftOwner1.address,
+          onftOwner: nftOwner2.address,
         };
-        await info.foundry
-          .connect(newAppOperatorWallet)
-          .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+        await info.appOperator
+          .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
 
         let needEth = await info.marketKol.buy.staticCall(params.tid, buyAmount, {
           value: BigInt(10) ** BigInt(18) * BigInt("10000000000"),
@@ -648,9 +613,9 @@ describe("Market", function () {
     it("buy multi and sell one", async function () {
       for (let i = 0; i < data.length; i++) {
         const allInfo = await loadFixture(deployAllContracts);
-        const info = allInfo.eth;
+        const info = allInfo.ethProxy;
 
-        let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
+
         let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
         let user1 = info.wallets[info.nextWalletIndex + 3];
@@ -668,17 +633,14 @@ describe("Market", function () {
         let part4 = (buyAmount - part1) / BigInt(3);
         let part5 = buyAmount - part1 - part2 - part3 - part4;
 
-        await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
         let params = {
           tid: "t1",
           tData: "0x11",
-          nftPercents: [5000, 95000],
-          nftOwers: [nftOwner1.address, nftOwner2.address],
-          nftData: ["0x22", "0x33"],
+          cnftOwner: nftOwner1.address,
+          onftOwner: nftOwner2.address,
         };
-        await info.foundry
-          .connect(newAppOperatorWallet)
-          .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+        await info.appOperator
+          .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
 
         let user1Eth1 = await ethers.provider.getBalance(user1.address);
         let marketKolEth1 = await ethers.provider.getBalance(await info.marketKol.getAddress());
@@ -905,9 +867,9 @@ describe("Market", function () {
     it("buy multi and sell multi", async function () {
       for (let i = 0; i < data.length; i++) {
         const allInfo = await loadFixture(deployAllContracts);
-        const info = allInfo.eth;
+        const info = allInfo.ethProxy;
 
-        let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
+
         let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
         let user1 = info.wallets[info.nextWalletIndex + 3];
@@ -925,17 +887,14 @@ describe("Market", function () {
         let part4 = (buyAmount - part1) / BigInt(3);
         let part5 = buyAmount - part1 - part2 - part3 - part4;
 
-        await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
         let params = {
           tid: "t1",
           tData: "0x11",
-          nftPercents: [5000, 95000],
-          nftOwers: [nftOwner1.address, nftOwner2.address],
-          nftData: ["0x22", "0x33"],
+          cnftOwner: nftOwner1.address,
+          onftOwner: nftOwner2.address,
         };
-        await info.foundry
-          .connect(newAppOperatorWallet)
-          .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+        await info.appOperator
+          .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
 
         let user1Eth1 = await ethers.provider.getBalance(user1.address);
         let marketKolEth1 = await ethers.provider.getBalance(await info.marketKol.getAddress());
@@ -1280,9 +1239,9 @@ describe("Market", function () {
     it("buy one and sell multi", async function () {
       for (let i = 0; i < data.length; i++) {
         const allInfo = await loadFixture(deployAllContracts);
-        const info = allInfo.eth;
+        const info = allInfo.ethProxy;
 
-        let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
+
         let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
         let user1 = info.wallets[info.nextWalletIndex + 3];
@@ -1290,17 +1249,14 @@ describe("Market", function () {
         let buyAmount = getTokenAmountWei(BigInt(data[i].buyAmount));
         let expectNeedEth = data[i].expectNeedEth;
 
-        await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
         let params = {
           tid: "t1",
           tData: "0x11",
-          nftPercents: [5000, 95000],
-          nftOwers: [nftOwner1.address, nftOwner2.address],
-          nftData: ["0x22", "0x33"],
+          cnftOwner: nftOwner1.address,
+          onftOwner: nftOwner2.address,
         };
-        await info.foundry
-          .connect(newAppOperatorWallet)
-          .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+        await info.appOperator
+          .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
 
         let needEth = await info.marketKol.buy.staticCall(params.tid, buyAmount, {
           value: BigInt(10) ** BigInt(18) * BigInt("10000000000"),
@@ -1505,9 +1461,9 @@ describe("Market", function () {
     it("buy multi and sell multi by multi user", async function () {
       for (let i = 0; i < data.length; i++) {
         const allInfo = await loadFixture(deployAllContracts);
-        const info = allInfo.eth;
+        const info = allInfo.ethProxy;
 
-        let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
+
         let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
         let user1 = info.wallets[info.nextWalletIndex + 3];
@@ -1529,17 +1485,14 @@ describe("Market", function () {
         let part4 = (buyAmount - part1) / BigInt(3);
         let part5 = buyAmount - part1 - part2 - part3 - part4;
 
-        await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
         let params = {
           tid: "t1",
           tData: "0x11",
-          nftPercents: [5000, 95000],
-          nftOwers: [nftOwner1.address, nftOwner2.address],
-          nftData: ["0x22", "0x33"],
+          cnftOwner: nftOwner1.address,
+          onftOwner: nftOwner2.address,
         };
-        await info.foundry
-          .connect(newAppOperatorWallet)
-          .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+        await info.appOperator
+          .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
 
         let user1Eth1 = await ethers.provider.getBalance(user1.address);
         let user2Eth1 = await ethers.provider.getBalance(user2.address);
@@ -1989,9 +1942,8 @@ describe("Market", function () {
        * user4 sell t2 1000
        */
       const allInfo = await loadFixture(deployAllContracts);
-      const info = allInfo.eth;
+      const info = allInfo.ethProxy;
 
-      let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
       let nftOwnerT1U1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwnerT1U2 = info.wallets[info.nextWalletIndex + 2];
       let nftOwnerT2U1 = info.wallets[info.nextWalletIndex + 3];
@@ -2016,41 +1968,22 @@ describe("Market", function () {
         },
       };
 
-      await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
       let paramsT1 = {
         tid: "t1",
         tData: "0x11",
-        nftPercents: [5000, 95000],
-        nftOwers: [nftOwnerT1U1.address, nftOwnerT1U2.address],
-        nftData: ["0x22", "0x33"],
+        cnftOwner: nftOwnerT1U1.address,
+        onftOwner: nftOwnerT1U2.address,
       };
-      await info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(
-          info.appId,
-          paramsT1.tid,
-          paramsT1.tData,
-          paramsT1.nftPercents,
-          paramsT1.nftOwers,
-          paramsT1.nftData,
-        );
+      await info.appOperator
+        .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
       let paramsT2 = {
         tid: "t2",
-        tData: "0x11",
-        nftPercents: [5000, 95000],
-        nftOwers: [nftOwnerT2U1.address, nftOwnerT2U2.address],
-        nftData: ["0x22", "0x33"],
+        tData: "0x22",
+        cnftOwner: nftOwnerT2U1.address,
+        onftOwner: nftOwnerT2U2.address,
       };
-      await info.foundry
-        .connect(newAppOperatorWallet)
-        .createToken(
-          info.appId,
-          paramsT2.tid,
-          paramsT2.tData,
-          paramsT2.nftPercents,
-          paramsT2.nftOwers,
-          paramsT2.nftData,
-        );
+      await info.appOperator
+        .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
 
       let user1EthStart = await ethers.provider.getBalance(user1.address);
       let user2EthStart = await ethers.provider.getBalance(user2.address);
@@ -2663,26 +2596,22 @@ describe("Market", function () {
       let data = [];
       for (let i = 0; i < amounts.length; i++) {
         const allInfo = await loadFixture(deployAllContracts);
-        const info = allInfo.eth;
+        const info = allInfo.ethProxy;
 
-        let newAppOperatorWallet = info.wallets[info.nextWalletIndex];
         let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
         let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
         let user1 = info.wallets[info.nextWalletIndex + 3];
 
         let buyAmount = amounts[i];
 
-        await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
         let params = {
           tid: "t1",
           tData: "0x11",
-          nftPercents: [5000, 95000],
-          nftOwers: [nftOwner1.address, nftOwner2.address],
-          nftData: ["0x22", "0x33"],
+          cnftOwner: nftOwner1.address,
+          onftOwner: nftOwner2.address,
         };
-        await info.foundry
-          .connect(newAppOperatorWallet)
-          .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+        await info.appOperator
+          .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
 
         let needEth = await info.marketKol.buy.staticCall(params.tid, buyAmount, {
           value: BigInt(10) ** BigInt(18) * BigInt("10000000000"),

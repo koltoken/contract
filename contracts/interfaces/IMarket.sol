@@ -8,7 +8,8 @@ interface IMarket {
     string tid,
     uint256 tokenAmount,
     uint256 payTokenAmount,
-    address buyer,
+    address sender,
+    address user,
     uint256[] feeTokenIds,
     address[] feeOwners,
     uint256[] feeAmounts
@@ -18,7 +19,8 @@ interface IMarket {
     string tid,
     uint256 tokenAmount,
     uint256 payTokenAmount,
-    address seller,
+    address sender,
+    address user,
     uint256[] feeTokenIds,
     address[] feeOwners,
     uint256[] feeAmounts
@@ -107,30 +109,58 @@ interface IMarket {
   function getPayTokenAmount(uint256 base, uint256 add) external view returns (uint256 payTokenAmount);
 
   function buy(string memory tid, uint256 tokenAmount) external payable returns (uint256 payTokenAmount);
+  function buyProxy(
+    string memory tid,
+    uint256 tokenAmount,
+    address user
+  ) external payable returns (uint256 payTokenAmount);
 
   function sell(string memory tid, uint256 tokenAmount) external returns (uint256 payTokenAmount);
+  function sellProxy(string memory tid, uint256 tokenAmount, address user) external returns (uint256 payTokenAmount);
 
   function mortgage(
     string memory tid,
     uint256 tokenAmount
   ) external returns (uint256 nftTokenId, uint256 payTokenAmount);
+  function mortgageProxy(
+    string memory tid,
+    uint256 tokenAmount,
+    address user
+  ) external returns (uint256 nftTokenId, uint256 payTokenAmount);
 
   function mortgageAdd(uint256 nftTokenId, uint256 tokenAmount) external returns (uint256 payTokenAmount);
+  function mortgageAddProxy(uint256 nftTokenId, uint256 tokenAmount) external returns (uint256 payTokenAmount);
 
   function redeem(uint256 nftTokenId, uint256 tokenAmount) external payable returns (uint256 payTokenAmount);
+  function redeemProxy(uint256 nftTokenId, uint256 tokenAmount) external payable returns (uint256 payTokenAmount);
 
   function multiply(
     string memory tid,
     uint256 multiplyAmount
   ) external payable returns (uint256 nftTokenId, uint256 payTokenAmount);
+  function multiplyProxy(
+    string memory tid,
+    uint256 multiplyAmount,
+    address user
+  ) external payable returns (uint256 nftTokenId, uint256 payTokenAmount);
 
   function multiplyAdd(uint256 nftTokenId, uint256 multiplyAmount) external payable returns (uint256 payTokenAmount);
+  function multiplyAddProxy(
+    uint256 nftTokenId,
+    uint256 multiplyAmount
+  ) external payable returns (uint256 payTokenAmount);
 
   function cash(uint256 nftTokenId, uint256 tokenAmount) external returns (uint256 payTokenAmount);
+  function cashProxy(uint256 nftTokenId, uint256 tokenAmount) external returns (uint256 payTokenAmount);
 
   function merge(uint256 nftTokenId, uint256 otherNFTTokenId) external returns (uint256 payTokenAmount);
+  function mergeProxy(uint256 nftTokenId, uint256 otherNFTTokenId) external returns (uint256 payTokenAmount);
 
   function split(
+    uint256 nftTokenId,
+    uint256 splitAmount
+  ) external payable returns (uint256 payTokenAmount, uint256 newNFTTokenId);
+  function splitProxy(
     uint256 nftTokenId,
     uint256 splitAmount
   ) external payable returns (uint256 payTokenAmount, uint256 newNFTTokenId);

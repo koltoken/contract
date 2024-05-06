@@ -5,11 +5,10 @@ import { ethers } from "hardhat";
 import { getTokenAmountWei } from "./shared/utils";
 
 describe("Market", function () {
-  describe("cash", function () {
+  describe("cash.proxy", function () {
     it("cash revert", async function () {
       const allInfo = await loadFixture(deployAllContracts);
       const info = allInfo.ethProxy;
-
 
       let nftOwner1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwner2 = info.wallets[info.nextWalletIndex + 2];
@@ -19,45 +18,44 @@ describe("Market", function () {
       let params = {
         tid: "t1",
         tData: "0x11",
-        cnftOwner: nftOwner1.address,
-        onftOwner: nftOwner2.address,
+        cnftOnwer: nftOwner1.address,
+        onftOnwer: nftOwner2.address,
       };
       await info.appOperator
-        .createToken(params.tid, params.tData, params.cnftOwner, params.onftOwner);
+        .createToken(params.tid, params.tData, params.cnftOnwer, params.onftOnwer);
 
-      await info.marketKol
+      await info.appOperator
         .connect(user1)
-        .buy(params.tid, getTokenAmountWei(1000), { value: BigInt(10) ** BigInt(18) * BigInt(10000) });
-      await info.marketKol
+        .buy(params.tid, getTokenAmountWei(1000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(10000) });
+      await info.appOperator
         .connect(user2)
-        .buy(params.tid, getTokenAmountWei(1000), { value: BigInt(10) ** BigInt(18) * BigInt(10000) });
-      await info.marketKol.connect(user1).mortgage(params.tid, getTokenAmountWei(1000));
-      await info.marketKol.connect(user2).mortgage(params.tid, getTokenAmountWei(1000));
+        .buy(params.tid, getTokenAmountWei(1000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(10000) });
+      await info.appOperator.connect(user1).mortgage(params.tid, getTokenAmountWei(1000));
+      await info.appOperator.connect(user2).mortgage(params.tid, getTokenAmountWei(1000));
       expect(await info.mortgageNFTKol.ownerOf(1)).eq(user1.address);
       expect(await info.mortgageNFTKol.ownerOf(2)).eq(user2.address);
-      await info.marketKol
+      await info.appOperator
         .connect(user1)
-        .redeem(1, getTokenAmountWei(1000), { value: BigInt(10) ** BigInt(18) * BigInt(10000) });
+        .redeem(1, getTokenAmountWei(1000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(10000) });
       await expect(info.mortgageNFTKol.ownerOf(1)).revertedWith("ERC721: invalid token ID");
       // cash not tokenid
-      await expect(info.marketKol.connect(user1).cash(5, 100)).revertedWith("ERC721: invalid token ID");
+      await expect(info.appOperator.connect(user1).cash(5, 100)).revertedWith("ERC721: invalid token ID");
       // cash deleted tokenid
-      await expect(info.marketKol.connect(user1).cash(1, 10)).revertedWith("ERC721: invalid token ID");
+      await expect(info.appOperator.connect(user1).cash(1, 10)).revertedWith("ERC721: invalid token ID");
       // cash other user tokenid
-      await expect(info.marketKol.connect(user1).cash(2, 10)).revertedWith("AOE");
+      await expect(info.appOperator.connect(user1).cash(2, 10)).revertedWith("AOE");
 
       // cash not enough
-      await expect(info.marketKol.connect(user2).cash(2, getTokenAmountWei(3000))).revertedWith("TAE");
+      await expect(info.appOperator.connect(user2).cash(2, getTokenAmountWei(3000))).revertedWith("TAE");
       // cash 0
-      await expect(info.marketKol.connect(user2).cash(2, 0)).revertedWith("TAE");
+      await expect(info.appOperator.connect(user2).cash(2, 0)).revertedWith("TAE");
       // cash no eth get
-      await expect(info.marketKol.connect(user2).cash(2, getTokenAmountWei(10))).revertedWith("CE");
+      await expect(info.appOperator.connect(user2).cash(2, getTokenAmountWei(10))).revertedWith("CE");
     });
 
     it("cash", async function () {
       const allInfo = await loadFixture(deployAllContracts);
       const info = allInfo.ethProxy;
-
 
       let nftOwnerT1_1 = info.wallets[info.nextWalletIndex + 1];
       let nftOwnerT1_2 = info.wallets[info.nextWalletIndex + 2];
@@ -74,60 +72,70 @@ describe("Market", function () {
         onftOwner: nftOwnerT1_2.address,
       };
       await info.appOperator
-        .createToken(paramsT1.tid, paramsT1.tData, paramsT1.cnftOwner, paramsT1.onftOwner);
+        .createToken(
+          paramsT1.tid,
+          paramsT1.tData,
+          paramsT1.cnftOwner,
+          paramsT1.onftOwner,
+        );
+
       let paramsT2 = {
         tid: "t2",
-        tData: "0x22",
+        tData: "0x11",
         cnftOwner: nftOwnerT2_1.address,
         onftOwner: nftOwnerT2_2.address,
       };
       await info.appOperator
-        .createToken(paramsT2.tid, paramsT2.tData, paramsT2.cnftOwner, paramsT2.onftOwner);
-
+        .createToken(
+          paramsT2.tid,
+          paramsT2.tData,
+          paramsT2.cnftOwner,
+          paramsT2.onftOwner,
+        );
 
       // user1 buy and mortgage 10000 t1 token=1
-      await info.marketKol
+      await info.appOperator
         .connect(user1)
-        .buy(paramsT1.tid, getTokenAmountWei(10000), { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
-      await info.marketKol.connect(user1).mortgage(paramsT1.tid, getTokenAmountWei(10000));
+        .buy(paramsT1.tid, getTokenAmountWei(10000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
+      await info.appOperator.connect(user1).mortgage(paramsT1.tid, getTokenAmountWei(10000));
 
-      await expect(info.marketKol.connect(user1).cash(1, getTokenAmountWei(1000))).revertedWith("CE");
+      await expect(info.appOperator.connect(user1).cash(1, getTokenAmountWei(1000))).revertedWith("CE");
 
       // user1 buy and mortgage 20000 t1 token=2
-      await info.marketKol
+      await info.appOperator
         .connect(user1)
-        .buy(paramsT1.tid, getTokenAmountWei(20000), { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
-      await info.marketKol.connect(user1).mortgage(paramsT1.tid, getTokenAmountWei(20000));
+        .buy(paramsT1.tid, getTokenAmountWei(20000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
+      await info.appOperator.connect(user1).mortgage(paramsT1.tid, getTokenAmountWei(20000));
       // user1 buy and mortgage 30000 t2 token=3
-      await info.marketKol
+      await info.appOperator
         .connect(user1)
-        .buy(paramsT2.tid, getTokenAmountWei(30000), { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
-      await info.marketKol.connect(user1).mortgage(paramsT2.tid, getTokenAmountWei(30000));
+        .buy(paramsT2.tid, getTokenAmountWei(30000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
+      await info.appOperator.connect(user1).mortgage(paramsT2.tid, getTokenAmountWei(30000));
       // user1 buy and mortgage 40000 t2 token=4
-      await info.marketKol
+      await info.appOperator
         .connect(user1)
-        .buy(paramsT2.tid, getTokenAmountWei(40000), { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
-      await info.marketKol.connect(user1).mortgage(paramsT2.tid, getTokenAmountWei(40000));
+        .buy(paramsT2.tid, getTokenAmountWei(40000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
+      await info.appOperator.connect(user1).mortgage(paramsT2.tid, getTokenAmountWei(40000));
       // user2 buy and mortgage 15000 t1 token=5
-      await info.marketKol
+      await info.appOperator
         .connect(user2)
-        .buy(paramsT1.tid, getTokenAmountWei(15000), { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
-      await info.marketKol.connect(user2).mortgage(paramsT1.tid, getTokenAmountWei(15000));
+        .buy(paramsT1.tid, getTokenAmountWei(15000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
+      await info.appOperator.connect(user2).mortgage(paramsT1.tid, getTokenAmountWei(15000));
       // user2 buy and mortgage 25000 t1 token=6
-      await info.marketKol
+      await info.appOperator
         .connect(user2)
-        .buy(paramsT1.tid, getTokenAmountWei(25000), { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
-      await info.marketKol.connect(user2).mortgage(paramsT1.tid, getTokenAmountWei(25000));
+        .buy(paramsT1.tid, getTokenAmountWei(25000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
+      await info.appOperator.connect(user2).mortgage(paramsT1.tid, getTokenAmountWei(25000));
       // user2 buy and mortgage 35000 t2 token=7
-      await info.marketKol
+      await info.appOperator
         .connect(user2)
-        .buy(paramsT2.tid, getTokenAmountWei(35000), { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
-      await info.marketKol.connect(user2).mortgage(paramsT2.tid, getTokenAmountWei(35000));
+        .buy(paramsT2.tid, getTokenAmountWei(35000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
+      await info.appOperator.connect(user2).mortgage(paramsT2.tid, getTokenAmountWei(35000));
       // user2 buy and mortgage 45000 t2 token=8
-      await info.marketKol
+      await info.appOperator
         .connect(user2)
-        .buy(paramsT2.tid, getTokenAmountWei(45000), { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
-      await info.marketKol.connect(user2).mortgage(paramsT2.tid, getTokenAmountWei(45000));
+        .buy(paramsT2.tid, getTokenAmountWei(45000), 0, { value: BigInt(10) ** BigInt(18) * BigInt(1000) });
+      await info.appOperator.connect(user2).mortgage(paramsT2.tid, getTokenAmountWei(45000));
       //
 
       let getGas = async function (tx: any) {
@@ -185,8 +193,8 @@ describe("Market", function () {
       );
       expect(await info.marketKol.totalSupply(paramsT2.tid)).eq(getTokenAmountWei(150000));
 
-      let userGetEth_0 = await info.marketKol.connect(user1).cash.staticCall(1, getTokenAmountWei(1000));
-      let tx_0 = await info.marketKol.connect(user1).cash(1, getTokenAmountWei(1000));
+      let userGetEth_0 = await info.appOperator.connect(user1).cash.staticCall(1, getTokenAmountWei(1000));
+      let tx_0 = await info.appOperator.connect(user1).cash(1, getTokenAmountWei(1000));
       let gas_0 = await getGas(tx_0);
 
       expect((await info.mortgageNFTKol.info(1)).amount).eq(getTokenAmountWei(10000) - getTokenAmountWei(1000));
@@ -253,7 +261,7 @@ describe("Market", function () {
       let user1_eth_2_before = await ethers.provider.getBalance(user1.address);
       let user2_eth_2_before = await ethers.provider.getBalance(user2.address);
 
-      let tx_1 = await info.marketKol.connect(user1).cash(1, getTokenAmountWei(9000));
+      let tx_1 = await info.appOperator.connect(user1).cash(1, getTokenAmountWei(9000));
       let gas_1 = await getGas(tx_1);
 
       await expect(info.mortgageNFTKol.ownerOf(1)).revertedWith("ERC721: invalid token ID");

@@ -58,3 +58,40 @@ export async function getAllContractAddress(deployWallet: HardhatEthersSigner): 
         kolMortgageNFTView: kolMortgageNFTView,
     };
 }
+
+
+export type AllContractAddressInfoProxy = {
+    foundry: string;
+    publicNFTFactory: string;
+    mortgageNFTFactory: string;
+    marketFactory: string;
+    kolCurve: string;
+    appOperator: string;
+};
+
+export async function getAllContractAddressProxy(deployWallet: HardhatEthersSigner): Promise<AllContractAddressInfoProxy> {
+    const nextNoice = await deployWallet.getNonce();
+
+    // deploy foundry 0
+    // deploy publicNFTFactory 1
+    // deploy mortgageNFTFactory 2
+    // deploy marketFactory 3
+    // deploy kolCurve 4
+    // create kol app 5
+    // deploy appOperator 6
+    const foundry = await getContractAddress(deployWallet.address, nextNoice);
+    const publicNFTFactory = await getContractAddress(deployWallet.address, nextNoice + 1);
+    const mortgageNFTFactory = await getContractAddress(deployWallet.address, nextNoice + 2);
+    const marketFactory = await getContractAddress(deployWallet.address, nextNoice + 3);
+    const kolCurve = await getContractAddress(deployWallet.address, nextNoice + 4);
+    const appOperator = await getContractAddress(deployWallet.address, nextNoice + 6);
+
+    return {
+        foundry: foundry,
+        publicNFTFactory: publicNFTFactory,
+        mortgageNFTFactory: mortgageNFTFactory,
+        marketFactory: marketFactory,
+        kolCurve: kolCurve,
+        appOperator: appOperator,
+    };
+}

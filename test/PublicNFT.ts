@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { parseTokenURI } from "./shared/utils";
 import { ethers } from "hardhat";
+import { PublicNFT } from "../typechain-types";
 
 describe("PublicNFT", function () {
   it("deploy", async function () {
@@ -119,7 +120,22 @@ describe("PublicNFT", function () {
     let nftOwner11 = info.wallets[info.nextWalletIndex + 5];
     let nftOwner44 = info.wallets[info.nextWalletIndex + 6];
 
-    await info.foundry.connect(info.kolOwnerWallet).setAppOperator(info.appId, newAppOperatorWallet.address);
+    // create app
+    let app2OwnerWallet = info.wallets[info.nextWalletIndex + 7];
+    let app2OperatorWallet = info.wallets[info.nextWalletIndex + 8];
+
+    await info.foundry.createApp(
+      "app2",
+      app2OwnerWallet.address,
+      app2OperatorWallet.address,
+      await info.kolCurve.getAddress(),
+      ZERO_ADDRESS,
+      info.buySellFee,
+    );
+
+    let appId_2 = info.appId + 1;
+    let publicNFTKol = (await ethers.getContractAt("PublicNFT", (await info.foundry.apps(appId_2)).publicNFT)) as PublicNFT;
+
 
     let params = {
       tid: "t1",
@@ -129,8 +145,8 @@ describe("PublicNFT", function () {
       nftData: ["0x22", "0x33"],
     };
     await info.foundry
-      .connect(newAppOperatorWallet)
-      .createToken(info.appId, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
+      .connect(app2OperatorWallet)
+      .createToken(appId_2, params.tid, params.tData, params.nftPercents, params.nftOwers, params.nftData);
 
     let params2 = {
       tid: "t2",
@@ -140,14 +156,14 @@ describe("PublicNFT", function () {
       nftData: ["0x55", "0x66"],
     };
     await info.foundry
-      .connect(newAppOperatorWallet)
-      .createToken(info.appId, params2.tid, params2.tData, params2.nftPercents, params2.nftOwers, params2.nftData);
+      .connect(app2OperatorWallet)
+      .createToken(appId_2, params2.tid, params2.tData, params2.nftPercents, params2.nftOwers, params2.nftData);
 
     // tokenIdToInfo
-    let info1 = await info.publicNFTKol.tokenIdToInfo(1);
-    let info2 = await info.publicNFTKol.tokenIdToInfo(2);
-    let info3 = await info.publicNFTKol.tokenIdToInfo(3);
-    let info4 = await info.publicNFTKol.tokenIdToInfo(4);
+    let info1 = await publicNFTKol.tokenIdToInfo(1);
+    let info2 = await publicNFTKol.tokenIdToInfo(2);
+    let info3 = await publicNFTKol.tokenIdToInfo(3);
+    let info4 = await publicNFTKol.tokenIdToInfo(4);
 
     expect(info1.tid).eq(params.tid);
     expect(info1.percent).eq(params.nftPercents[0]);
@@ -170,8 +186,8 @@ describe("PublicNFT", function () {
     expect(info4._owner).eq(nftOwner4.address);
 
     // tidToTokenIds
-    let tidToTokenIds1 = await info.publicNFTKol.tidToTokenIds(params.tid);
-    let tidToTokenIds2 = await info.publicNFTKol.tidToTokenIds(params2.tid);
+    let tidToTokenIds1 = await publicNFTKol.tidToTokenIds(params.tid);
+    let tidToTokenIds2 = await publicNFTKol.tidToTokenIds(params2.tid);
 
     expect(tidToTokenIds1.length).eq(2);
     expect(tidToTokenIds1[0]).eq(1);
@@ -182,8 +198,8 @@ describe("PublicNFT", function () {
     expect(tidToTokenIds2[1]).eq(4);
 
     // tidToInfos
-    let tidToInfos1 = await info.publicNFTKol.tidToInfos(params.tid);
-    let tidToInfos2 = await info.publicNFTKol.tidToInfos(params2.tid);
+    let tidToInfos1 = await publicNFTKol.tidToInfos(params.tid);
+    let tidToInfos2 = await publicNFTKol.tidToInfos(params2.tid);
 
     expect(tidToInfos1.tokenIds.length).eq(2);
     expect(tidToInfos1.tokenIds[0]).eq(1);
@@ -217,17 +233,17 @@ describe("PublicNFT", function () {
     expect(tidToInfos2.owners[0]).eq(nftOwner3.address);
     expect(tidToInfos2.owners[1]).eq(nftOwner4.address);
 
-    await info.publicNFTKol.connect(nftOwner1).transferFrom(nftOwner1.address, nftOwner11.address, 1);
-    await info.publicNFTKol.connect(nftOwner4).transferFrom(nftOwner4.address, nftOwner44.address, 4);
+    await publicNFTKol.connect(nftOwner1).transferFrom(nftOwner1.address, nftOwner11.address, 1);
+    await publicNFTKol.connect(nftOwner4).transferFrom(nftOwner4.address, nftOwner44.address, 4);
 
-    expect(await info.publicNFTKol.ownerOf(1)).eq(nftOwner11.address);
-    expect(await info.publicNFTKol.ownerOf(4)).eq(nftOwner44.address);
+    expect(await publicNFTKol.ownerOf(1)).eq(nftOwner11.address);
+    expect(await publicNFTKol.ownerOf(4)).eq(nftOwner44.address);
 
     // tokenIdToInfo
-    info1 = await info.publicNFTKol.tokenIdToInfo(1);
-    info2 = await info.publicNFTKol.tokenIdToInfo(2);
-    info3 = await info.publicNFTKol.tokenIdToInfo(3);
-    info4 = await info.publicNFTKol.tokenIdToInfo(4);
+    info1 = await publicNFTKol.tokenIdToInfo(1);
+    info2 = await publicNFTKol.tokenIdToInfo(2);
+    info3 = await publicNFTKol.tokenIdToInfo(3);
+    info4 = await publicNFTKol.tokenIdToInfo(4);
 
     expect(info1.tid).eq(params.tid);
     expect(info1.percent).eq(params.nftPercents[0]);
@@ -250,8 +266,8 @@ describe("PublicNFT", function () {
     expect(info4._owner).eq(nftOwner44.address);
 
     // tidToTokenIds
-    tidToTokenIds1 = await info.publicNFTKol.tidToTokenIds(params.tid);
-    tidToTokenIds2 = await info.publicNFTKol.tidToTokenIds(params2.tid);
+    tidToTokenIds1 = await publicNFTKol.tidToTokenIds(params.tid);
+    tidToTokenIds2 = await publicNFTKol.tidToTokenIds(params2.tid);
 
     expect(tidToTokenIds1.length).eq(2);
     expect(tidToTokenIds1[0]).eq(1);
@@ -262,8 +278,8 @@ describe("PublicNFT", function () {
     expect(tidToTokenIds2[1]).eq(4);
 
     // tidToInfos
-    tidToInfos1 = await info.publicNFTKol.tidToInfos(params.tid);
-    tidToInfos2 = await info.publicNFTKol.tidToInfos(params2.tid);
+    tidToInfos1 = await publicNFTKol.tidToInfos(params.tid);
+    tidToInfos2 = await publicNFTKol.tidToInfos(params2.tid);
 
     expect(tidToInfos1.tokenIds.length).eq(2);
     expect(tidToInfos1.tokenIds[0]).eq(1);
@@ -301,11 +317,11 @@ describe("PublicNFT", function () {
     await expect(info.publicNFTKol.tokenIdToInfo(5)).revertedWith("ERC721: invalid token ID");
 
     // tidToTokenIds empty
-    let tidToTokenIds3 = await info.publicNFTKol.tidToTokenIds("t3");
+    let tidToTokenIds3 = await publicNFTKol.tidToTokenIds("t3");
     expect(tidToTokenIds3.length).eq(0);
 
     // tidToInfos empty
-    let tidToInfos3 = await info.publicNFTKol.tidToInfos("t3");
+    let tidToInfos3 = await publicNFTKol.tidToInfos("t3");
 
     expect(tidToInfos3.tokenIds.length).eq(0);
     expect(tidToInfos3.percents.length).eq(0);
